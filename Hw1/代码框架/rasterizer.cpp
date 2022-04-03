@@ -42,6 +42,12 @@ void rst::rasterizer::draw_line(Eigen::Vector3f begin, Eigen::Vector3f end)
     dy=y2-y1;
     dx1=fabs(dx);
     dy1=fabs(dy);
+    //参考：https://www.jianshu.com/p/fc237110d9d4
+    //px和py是累计误差
+    //本来应该是累计误差err>=0.5时，y（x）需要进行更新，x增加1的时候，err增加dy1/dx1
+    //但是0.5是浮点，浮点算的慢，所以*2，将式子右边变为0，得到2dy1-dx1>=0,这个就是px
+    //px<0代表还不需要更新y，所以继续积累误差，也就是+2dy1（从原始的err增加dy1/dx1一路照着推可以得到）
+    //当px>=0时，代表需要更新y，px需要清空，在+2dy1的基础上-2dx，也就是+2*(dy1-dx1)（也即是err减去1一路照着推可以得到）
     px=2*dy1-dx1;
     py=2*dx1-dy1;
 
