@@ -1,0 +1,3 @@
+/home/fangzheng/Project/CG/GAMES101/Hw1/代码框架/build/CMakeFiles/rebuild_cache.dir
+/home/fangzheng/Project/CG/GAMES101/Hw1/代码框架/build/CMakeFiles/edit_cache.dir
+/home/fangzheng/Project/CG/GAMES101/Hw1/代码框架/build/CMakeFiles/Rasterizer.dir
