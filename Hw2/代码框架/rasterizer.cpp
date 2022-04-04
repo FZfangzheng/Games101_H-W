@@ -77,9 +77,10 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
     auto& buf = pos_buf[pos_buffer.pos_id];
     auto& ind = ind_buf[ind_buffer.ind_id];
     auto& col = col_buf[col_buffer.col_id];
-
-    float f1 = (50 - 0.1) / 2.0;
-    float f2 = (50 + 0.1) / 2.0;
+    float zNear = -0.1;
+    float zFar = -50;
+    float f1 = (zNear - zFar) / 2.0;
+    float f2 = (zNear + zFar) / 2.0;
 
     Eigen::Matrix4f mvp = projection * view * model;
     for (auto& i : ind)
@@ -150,14 +151,14 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
 	maxX = static_cast<int>(std::ceil(maxX));
 	minY = static_cast<int>(std::floor(minY));
 	maxY = static_cast<int>(std::ceil(maxY));
-    bool MSAA = true;
+    bool MSAA = false;
     if(MSAA){
         // 一个格子分四个
         float pos[4][2]={{0.25,0.25},{0.75,0.75},{0.75,0.25},{0.25,0.75}};
         for(int x = minX; x <= maxX; ++x){
             for(int y = minY; y <= maxY; ++y){
                 
-                float minDepth = FLT_MAX;
+                float minDepth = FLT_MIN;
                 // 四个点在三角形里的数量
                 int count = 0;
                 for(int i = 0; i < 4; ++i){
@@ -172,12 +173,12 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
                         float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
                         float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
                         z_interpolated *= w_reciprocal;
-                        minDepth = std::min(minDepth, z_interpolated);
+                        minDepth = std::max(minDepth, z_interpolated);
                         count++;
                     }
                 }
                 if(count != 0){
-                    if (depth_buf[get_index(x, y)] > minDepth) {
+                    if (depth_buf[get_index(x, y)] < minDepth) {
                         Vector3f color = t.getColor() * count / 4;
                         Vector3f point(3);
                         point << static_cast<float>(x), static_cast<float>(y), minDepth;
@@ -203,8 +204,8 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
                     float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
                     float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
                     z_interpolated *= w_reciprocal;
-                    // Z越小表示距离人越近
-                    if (depth_buf[get_index(x, y)] > z_interpolated) {
+                    // Z越大表示距离人越近
+                    if (depth_buf[get_index(x, y)] < z_interpolated) {
                         Vector3f color = t.getColor();
                         Vector3f point(3);
                         point << static_cast<float>(x), static_cast<float>(y), z_interpolated;
@@ -242,7 +243,7 @@ void rst::rasterizer::clear(rst::Buffers buff)
     }
     if ((buff & rst::Buffers::Depth) == rst::Buffers::Depth)
     {
-        std::fill(depth_buf.begin(), depth_buf.end(), std::numeric_limits<float>::infinity());
+        std::fill(depth_buf.begin(), depth_buf.end(), std::numeric_limits<float>::lowest());
     }
 }
 

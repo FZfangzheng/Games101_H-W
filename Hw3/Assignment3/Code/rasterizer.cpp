@@ -172,8 +172,8 @@ static std::tuple<float, float, float> computeBarycentric2D(float x, float y, co
 
 void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList) {
 
-    float f1 = (50 - 0.1) / 2.0;
-    float f2 = (50 + 0.1) / 2.0;
+    float f1 = -(50 - 0.1) / 2.0;
+    float f2 = -(50 + 0.1) / 2.0;
 
     Eigen::Matrix4f mvp = projection * view * model;
     for (const auto& t:TriangleList)
@@ -279,7 +279,56 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eig
     // Use: payload.view_pos = interpolated_shadingcoords;
     // Use: Instead of passing the triangle's color directly to the frame buffer, pass the color to the shaders first to get the final color;
     // Use: auto pixel_color = fragment_shader(payload);
+    auto v = t.toVector4();
+    // 三角形三个点
+    Vector4f A = v[0];
+    Vector4f B = v[1];
+    Vector4f C = v[2];
+    // bounding box
+    float minX = std::min(A[0], std::min(B[0], C[0]));
+    float maxX = std::max(A[0], std::max(B[0], C[0]));
+    float minY = std::min(A[1], std::min(B[1], C[1]));
+    float maxY = std::max(A[1], std::max(B[1], C[1]));
+    // 取整
+    minX = static_cast<int>(std::floor(minX));
+	maxX = static_cast<int>(std::ceil(maxX));
+	minY = static_cast<int>(std::floor(minY));
+	maxY = static_cast<int>(std::ceil(maxY));
+    // 遍历bounding box 里的点
+    for(int x = minX; x <= maxX; ++x){
+        for(int y = minY; y <= maxY; ++y){
+            if(insideTriangle(static_cast<float>(x) + 0.5, static_cast<float>(y) + 0.5, t.v)){
+                //获取重心插值
+                auto tup = computeBarycentric2D(static_cast<float>(x) + 0.5, static_cast<float>(y) + 0.5, t.v);
+                float alpha;
+                float beta;
+                float gamma;
+                std::tie(alpha, beta, gamma) = tup;
+                float Z = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
+                float zp = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
+                zp *= Z;
+				if (zp < depth_buf[get_index(x, y)]){
+					// color
+					auto interpolated_color = interpolate(alpha, beta, gamma, t.color[0], t.color[1], t.color[2], 1);
+					// normal
+					auto interpolated_normal = interpolate(alpha, beta, gamma, t.normal[0], t.normal[1], t.normal[2], 1).normalized();
+					// texcoords
+					auto interpolated_texcoords = interpolate(alpha, beta, gamma, t.tex_coords[0], t.tex_coords[1], t.tex_coords[2], 1);
+					// shadingcoords
+					auto interpolated_shadingcoords = interpolate(alpha, beta, gamma, view_pos[0], view_pos[1], view_pos[2], 1);
 
+					// 用来传递插值结果的结构体
+					fragment_shader_payload payload(interpolated_color, interpolated_normal, interpolated_texcoords, texture ? &*texture : nullptr);
+					payload.view_pos = interpolated_shadingcoords;
+					auto pixel_color = fragment_shader(payload);
+					// 设置深度
+					depth_buf[get_index(x, y)] = zp;
+					// 设置颜色
+					set_pixel(Eigen::Vector2i(x, y), pixel_color);
+                }
+            }
+        }
+    }
  
 }
 

@@ -6,33 +6,33 @@
 
 #IncludeRegexTransform: 
 
-/home/fangzheng/Project/CG/GAMES101/Hw2/代码框架/Triangle.hpp
+/home/fangzheng/Project/CG/GAMES101/Games101_H-W/Hw2/代码框架/Triangle.hpp
 eigen3/Eigen/Eigen
 -
 
-/home/fangzheng/Project/CG/GAMES101/Hw2/代码框架/global.hpp
+/home/fangzheng/Project/CG/GAMES101/Games101_H-W/Hw2/代码框架/global.hpp
 
-/home/fangzheng/Project/CG/GAMES101/Hw2/代码框架/rasterizer.cpp
+/home/fangzheng/Project/CG/GAMES101/Games101_H-W/Hw2/代码框架/rasterizer.cpp
 algorithm
 -
 vector
 -
 rasterizer.hpp
-/home/fangzheng/Project/CG/GAMES101/Hw2/代码框架/rasterizer.hpp
+/home/fangzheng/Project/CG/GAMES101/Games101_H-W/Hw2/代码框架/rasterizer.hpp
 opencv2/opencv.hpp
 -
 math.h
 -
 
-/home/fangzheng/Project/CG/GAMES101/Hw2/代码框架/rasterizer.hpp
+/home/fangzheng/Project/CG/GAMES101/Games101_H-W/Hw2/代码框架/rasterizer.hpp
 eigen3/Eigen/Eigen
 -
 algorithm
 -
 global.hpp
-/home/fangzheng/Project/CG/GAMES101/Hw2/代码框架/global.hpp
+/home/fangzheng/Project/CG/GAMES101/Games101_H-W/Hw2/代码框架/global.hpp
 Triangle.hpp
-/home/fangzheng/Project/CG/GAMES101/Hw2/代码框架/Triangle.hpp
+/home/fangzheng/Project/CG/GAMES101/Games101_H-W/Hw2/代码框架/Triangle.hpp
 
 /usr/local/include/opencv4/opencv2/calib3d.hpp
 opencv2/core.hpp

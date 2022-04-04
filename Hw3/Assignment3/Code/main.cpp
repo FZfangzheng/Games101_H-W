@@ -46,11 +46,39 @@ Eigen::Matrix4f get_model_matrix(float angle)
 
     return translate * rotation * scale;
 }
-
+//输入参数为视场角、宽高比、近平面和远平面
 Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float zNear, float zFar)
 {
     // TODO: Use the same projection matrix from the previous assignments
+    Eigen::Matrix4f projection;
+    Eigen::Matrix4f persp_to_ortho;
+    Eigen::Matrix4f ortho;
 
+    //透视投影到正交投影的变换矩阵
+    persp_to_ortho <<   zNear, 0, 0, 0,
+                        0, zNear, 0, 0,
+                        0, 0, zNear + zFar, -(zNear * zFar),
+                        0, 0, 1, 0;
+    
+    //视场角变为弧度制
+    double eye_radian = eye_fov / 180.0 *MY_PI;
+    //利用视场角和近平面计算高（一半）
+    double t = -zNear * tan(eye_radian/2);
+    //利用宽高比和高计算宽（一半）
+    double r = t * aspect_ratio;
+
+    //正交投影矩阵
+    ortho <<    1/r, 0, 0, 0,
+                0, 1/t, 0, 0,
+                0, 0, 2/(zNear-zFar), -(zNear + zFar)/(zNear - zFar),
+                0, 0, 0, 1;
+
+    auto persp = ortho * persp_to_ortho;
+
+    projection = persp * projection;
+
+
+    return projection;
 }
 
 Eigen::Vector3f vertex_shader(const vertex_shader_payload& payload)
@@ -84,6 +112,8 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload)
     if (payload.texture)
     {
         // TODO: Get the texture value at the texture coordinates of the current fragment
+        // 获取纹理坐标的颜色
+        return_color = payload.texture->getColor(payload.tex_coords.x(), payload.tex_coords.y());
 
     }
     Eigen::Vector3f texture_color;
@@ -112,7 +142,25 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload)
     {
         // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
         // components are. Then, accumulate that result on the *result_color* object.
+        // 光的方向，方向注意是点到光源
+		Eigen::Vector3f light_dir = light.position - point;
+		// 视线方向， 方向注意是点到眼睛
+		Eigen::Vector3f view_dir = eye_pos - point;
+		// 衰减因子，距离平方
+		float r = light_dir.dot(light_dir);
 
+		// ambient
+		Eigen::Vector3f La = ka.cwiseProduct(amb_light_intensity);
+		// diffuse
+		Eigen::Vector3f Ld = kd.cwiseProduct(light.intensity / r);
+		Ld *= std::max(0.0f, normal.normalized().dot(light_dir.normalized()));
+		// specular
+        // h半程向量
+		Eigen::Vector3f h = (light_dir + view_dir).normalized();
+		Eigen::Vector3f Ls = ks.cwiseProduct(light.intensity / r);
+		Ls *= std::pow(std::max(0.0f, normal.normalized().dot(h)), p);
+
+		result_color += (La + Ld + Ls);
     }
 
     return result_color * 255.f;
@@ -142,7 +190,26 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)
     {
         // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
         // components are. Then, accumulate that result on the *result_color* object.
-        
+        // 光的方向，方向注意是点到光源
+		Eigen::Vector3f light_dir = light.position - point;
+		// 视线方向， 方向注意是点到眼睛
+		Eigen::Vector3f view_dir = eye_pos - point;
+		// 衰减因子，距离平方
+		float r = light_dir.dot(light_dir);
+
+		// ambient
+		Eigen::Vector3f La = ka.cwiseProduct(amb_light_intensity);
+		// diffuse
+		Eigen::Vector3f Ld = kd.cwiseProduct(light.intensity / r);
+		Ld *= std::max(0.0f, normal.normalized().dot(light_dir.normalized()));
+		// specular
+        // h半程向量
+		Eigen::Vector3f h = (light_dir + view_dir).normalized();
+		Eigen::Vector3f Ls = ks.cwiseProduct(light.intensity / r);
+		Ls *= std::pow(std::max(0.0f, normal.normalized().dot(h)), p);
+
+		result_color += (La + Ld + Ls);
+
     }
 
     return result_color * 255.f;
@@ -320,7 +387,7 @@ int main(int argc, const char** argv)
         r.clear(rst::Buffers::Color | rst::Buffers::Depth);
         r.set_model(get_model_matrix(angle));
         r.set_view(get_view_matrix(eye_pos));
-        r.set_projection(get_projection_matrix(45.0, 1, 0.1, 50));
+        r.set_projection(get_projection_matrix(45.0, 1, -0.1, -50));
 
         r.draw(TriangleList);
         cv::Mat image(700, 700, CV_32FC3, r.frame_buffer().data());
@@ -338,7 +405,7 @@ int main(int argc, const char** argv)
 
         r.set_model(get_model_matrix(angle));
         r.set_view(get_view_matrix(eye_pos));
-        r.set_projection(get_projection_matrix(45.0, 1, 0.1, 50));
+        r.set_projection(get_projection_matrix(45.0, 1, -0.1, -50));
 
         //r.draw(pos_id, ind_id, col_id, rst::Primitive::Triangle);
         r.draw(TriangleList);

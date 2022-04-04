@@ -146,9 +146,10 @@ void rst::rasterizer::draw(rst::pos_buf_id pos_buffer, rst::ind_buf_id ind_buffe
     }
     auto& buf = pos_buf[pos_buffer.pos_id];
     auto& ind = ind_buf[ind_buffer.ind_id];
-
-    float f1 = (100 - 0.1) / 2.0;
-    float f2 = (100 + 0.1) / 2.0;
+    float zNear = -0.1;
+    float zFar = -50;
+    float f1 = (zNear - zFar) / 2.0;
+    float f2 = (zNear + zFar) / 2.0;
 
     Eigen::Matrix4f mvp = projection * view * model;
     for (auto& i : ind)
