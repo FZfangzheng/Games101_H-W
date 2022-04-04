@@ -171,9 +171,10 @@ static std::tuple<float, float, float> computeBarycentric2D(float x, float y, co
 }
 
 void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList) {
-
-    float f1 = -(50 - 0.1) / 2.0;
-    float f2 = -(50 + 0.1) / 2.0;
+    float zNear = -0.1;
+    float zFar = -50;
+    float f1 = (zNear - zFar) / 2.0;
+    float f2 = (zNear + zFar) / 2.0;
 
     Eigen::Matrix4f mvp = projection * view * model;
     for (const auto& t:TriangleList)
@@ -307,7 +308,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eig
                 float Z = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
                 float zp = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
                 zp *= Z;
-				if (zp < depth_buf[get_index(x, y)]){
+				if (zp > depth_buf[get_index(x, y)]){
 					// color
 					auto interpolated_color = interpolate(alpha, beta, gamma, t.color[0], t.color[1], t.color[2], 1);
 					// normal
@@ -355,7 +356,7 @@ void rst::rasterizer::clear(rst::Buffers buff)
     }
     if ((buff & rst::Buffers::Depth) == rst::Buffers::Depth)
     {
-        std::fill(depth_buf.begin(), depth_buf.end(), std::numeric_limits<float>::infinity());
+        std::fill(depth_buf.begin(), depth_buf.end(), std::numeric_limits<float>::lowest());
     }
 }
 
